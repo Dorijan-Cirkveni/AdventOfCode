@@ -1,3 +1,16 @@
+# Virtual environments
+env/
+.venv/
+
+# PyCharm specific
+.idea/*
+.idea/workspace.xml
+.idea/modules.xml
+
+# Logs and temp files
+*.log
+*.tmp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
