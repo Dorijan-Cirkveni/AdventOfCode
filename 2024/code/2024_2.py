@@ -1,31 +1,41 @@
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 
 
 def read(filepath):
-    A=[]
-    B=[]
+    M=[]
     with open(filepath,'r') as file:
         for line in file:
             if not line:
                 continue
-            if line[-1]!='\n':
-                line+='\n'
-            a,b=line[:-1].split('   ')
-            A.append(int(a))
-            B.append(int(b))
-    return A,B
+            L=line[:-1].split()
+            L2=[int(e) for e in L]
+            M.append(L2)
+    return M
 
-def process_1(A,B):
-    A.sort(reverse=True)
-    B.sort(reverse=True)
+def check_line(L):
+    last=L.pop()
+    direction=0
+    while L:
+        cur=L.pop()
+        diff=last-cur
+        last=cur
+        if diff==0:
+            return False # Not ascending or descending
+        if direction*diff<0:
+            return False # Not consistent
+        if direction==0:
+            direction=-1 if diff<0 else 1 # Set asc/desc direction
+        diff*=direction
+        if diff>3:
+            return False # Difference too big
+    return True
+
+
+def process_1(M):
     res=0
-    best=0
-    while A:
-        a=A.pop()
-        b=B.pop()
-        res+=abs(a-b)
-        best=max(best,abs(a-b))
-    print(best)
+    while M:
+        L=M.pop()
+        res+=check_line(L)
     return res
 
 def make_counter(A):
@@ -34,27 +44,36 @@ def make_counter(A):
         D[A.pop()]+=1
     return D
 
-def process_2(A,B):
-    AD=make_counter(A)
-    BD=make_counter(B)
-    res=0
-    for e,v in AD.items():
-        if e not in BD:
+def process_2(M):
+    res=len(M)
+    while M:
+        L=M.pop()
+        if check_line(L[:]):
             continue
-        res+=e*v*BD[e]
+        L2=[]
+        while L:
+            e=L.pop()
+            if check_line(L+L2[::-1]):
+                break
+            L2.append(e)
+        else:
+            res-=1
     return res
 
 
 TASKNUM=2
 
-def main():
-    test=[3,4,2,1,3,3],[4,3,5,3,9,3]
-    result=process_2(*test)
+def runprocess(process:callable):
+    test=[[7, 6, 4, 2, 1], [1, 2, 7, 8, 9], [9, 7, 6, 2, 1], [1, 3, 2, 4, 5], [8, 6, 4, 4, 1], [1, 3, 6, 7, 9]],
+    result=process(*test)
     print(result)
     inputbase="..\\inputs\\2024_{}.txt".format(TASKNUM)
-    data=read(inputbase)
-    result=process_2(*data)
+    data=read(inputbase),
+    result=process(*data)
     print(result)
+
+def main():
+    runprocess(process_2)
     return
 
 
