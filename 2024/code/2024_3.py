@@ -12,11 +12,6 @@ def read(filepath):
             M.append(L)
     return M
 
-def get_locations(s,pattern,sentinel=False):
-    L=[-1] if sentinel else []
-    for m in re.finditer(r'mul\(\d{1,3},\d{1,3}\)',s):
-        L.append(m.pos)
-
 def check_line(s):
     res=0
     for m in re.finditer(r'mul\(\d{1,3},\d{1,3}\)',s):
@@ -24,14 +19,13 @@ def check_line(s):
         res+=int(a)*int(b)
     return res
 
-def merge(starts:list,ends:list):
-
-
 def check_line_2(s):
     res=0
+    status=
     starts=get_locations(s,'do()', True)
     ends=get_locations(s,'don\'t()')
     for m in re.finditer(r'mul\(\d{1,3},\d{1,3}\)',s):
+
         a,b=m.group()[4:][:-1].split(',')
         res+=int(a)*int(b)
     return res
