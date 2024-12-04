@@ -19,16 +19,22 @@ def check_line(s):
         res+=int(a)*int(b)
     return res
 
-def check_line_2(s):
+def check_line_2(s,status:bool):
     res=0
-    status=
-    starts=get_locations(s,'do()', True)
-    ends=get_locations(s,'don\'t()')
-    for m in re.finditer(r'mul\(\d{1,3},\d{1,3}\)',s):
-
-        a,b=m.group()[4:][:-1].split(',')
-        res+=int(a)*int(b)
-    return res
+    pattern=r"(mul\(\d{1,3},\d{1,3}\))|(do\(\))|(don\'t\(\))"
+    for m in re.finditer(pattern,s):
+        g=m.group()
+        match g[2]:
+            case '(':
+                status=True
+            case 'n':
+                status=False
+            case 'l':
+                if not status:
+                    continue
+                a,b=g[4:][:-1].split(',')
+                res+=int(a)*int(b)
+    return res,status
 
 
 def process_1(M):
@@ -46,16 +52,17 @@ def make_counter(A):
 
 def process_2(M):
     res = 0
-    while M:
-        L = M.pop()
-        res += check_line_2(L)
+    status=True
+    for L in M:
+        temp, status = check_line_2(L,status)
+        res+=temp
     return res
 
 
 TASK=__file__.split('\\')[-1][:-3]
 
 def runprocess(process:callable):
-    test=["mul(2,2) mul(1,2)"],
+    test=["don't()mul(2,2)","mul(2,2),do()mul(1,2)"],
     result=process(*test)
     print(result)
     inputbase=f"..\\inputs\\{TASK}.txt"
