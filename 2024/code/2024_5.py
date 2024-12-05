@@ -33,10 +33,40 @@ def process_1(MM):
         res+=process_entry(e,reqs)
     return res
 
-def process_2(M):
-    res = 0
-    for e in M[1]:
-        return 0
+def filter_reqs(EL:list,reqs):
+    SE=set(EL)
+    res={}
+    for k,S in reqs.items():
+        S&=SE
+        if S:
+            res[k]=S
+    return res
+
+def flatten_group_reqs(groups:dict,start):
+    while groups[start]!=groups[groups[start]]:
+        groups[start] != groups[groups[start]]
+
+
+def group_reqs(reqs:dict):
+    res={e:e for e in reqs}
+    for e,v in reqs.items():
+        while res[e]!=res[res[e]]:
+            res[e]=res[]
+
+def correct_entry(entry:str,reqs:dict):
+    eL=entry.split(',')
+    reqs=filter_reqs(EL,reqs)
+    logged={}
+    valid=False
+    if valid:
+        return int(L[len(L)//2])
+    return 0
+
+def process_2(MM):
+    reqs=setup_reqs(MM[0])
+    res=0
+    for e in MM[1]:
+        res+=correct_entry(e,reqs)
     return res
 
 
@@ -48,16 +78,8 @@ def runprocess(process:callable):
     result=process(data)
     print(result)
 
-def runproc2():
-    inputbase=f"..\\inputs\\{TASK}.txt"
-    data=read(inputbase)
-    result=defaultdict(int)
-    for s in data[1]:
-        result[len(s.split(','))&1]+=1
-    print(result)
-
 def main():
-    runprocess(process_1)
+    runprocess(process_2)
     return
 
 
