@@ -8,11 +8,6 @@ def preprocess(s:str):
     ca,cb=s.split(': ')
     return int(ca),[int(e) for e in cb.split()]
 
-def read(filepath):
-    with open(filepath, 'r') as file:
-        M = file.read().split('\n')
-    return M
-
 def check_forward(target:int,parts:list):
     L={0:""}
     for cur in parts:
@@ -51,7 +46,7 @@ def process_1(data):
             res+=processed[0]
             if not verify(processed[1][:],ops,processed[0]):
                 raise Exception(processed)
-    return res
+    return res0,res
 
 
 def process_2(data):
