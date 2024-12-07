@@ -1,3 +1,6 @@
+from os.path import curdir
+
+
 def read(filepath):
     with open(filepath, 'r') as file:
         M = file.read().split('\n')
@@ -8,49 +11,42 @@ def preprocess(s:str):
     ca,cb=s.split(': ')
     return int(ca),[int(e) for e in cb.split()]
 
-def check_forward(target:int,parts:list):
-    L={0:""}
-    for cur in parts:
+def check(target:int,parts:list,use_concat=False):
+    L={target:""}
+    while parts:
         NL={}
-        for e in L:
-            v=L[e]
-            if e+cur<=target:
-                NL[e+cur]=v+'+'
-            if e*cur<=target:
-                NL[e*cur]=v+'*'
+        e=parts.pop()
+        for cur,v in L.items():
+            if e<=cur:
+                NL[cur-e]='+'+v
+            if not parts:
+                continue
+            if cur%e==0:
+                NL[cur//e]='*'+v
+            if use_concat and str(cur).endswith(str(e)):
+                lim=-len(str(e))
+                new=int('0'+str(cur)[:lim])
+                NL[new]='|'+v
         L=NL
-    return L.get(target,'')
-
-def verify(data,ops,res):
-    ops=list(ops)
-    while data:
-        cur=data.pop()
-        op=ops.pop()
-        if op=='+':
-            res-=cur
-        else:
-            if res%cur!=0:
-                return False
-            res//=cur
-    return res==0
+    return L.get(0,'')
 
 
 
-def process_1(data):
+def process_1(data,use_concat=False):
     res=0
     res0=0
     for entry in data:
         processed=preprocess(entry)
-        ops=check_forward(*processed)
+        print(processed,end="->")
+        ops=check(*processed,use_concat)
+        print(ops)
         if ops:
             res+=processed[0]
-            if not verify(processed[1][:],ops,processed[0]):
-                raise Exception(processed)
     return res0,res
 
 
 def process_2(data):
-    return process_1(data)
+    return process_1(data,True)
 
 
 TASK = __file__.split('\\')[-1][:-3]
@@ -64,12 +60,12 @@ def runprocess(process: callable):
 
 
 def main():
-    c=verify([1,1,1],'+++',4)
     runprocess(process_2)
     return
 
 '''
 5540634308465 too high
+5540634308362
 '''
 
 
