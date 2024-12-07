@@ -9,64 +9,88 @@ def read(filepath):
         MM[i]=e.split('\n')
     return MM
 
-def setup_reqs(order):
-    reqs=defaultdict(set)
-    while order:
-        a,b=order.pop().split('|')
-        reqs[b].add(a)
-    return reqs
+def order(reqs:dict):
+    counter={e:0 for e in reqs}
+    for e,V in reqs.items():
+        for f in V:
+            counter.setdefault(f,0)
+            counter[f]+=1
+    curs=[e for e,v in counter.items() if not v]
+    ind=-1
+    while curs:
+        nexes=[]
+        while curs:
+            cur=curs.pop()
+            counter[cur]=ind
+            for e in reqs[cur]:
+                counter[e]-=1
+                if not counter[e]:
+                    nexes.append(e)
+        ind-=1
+        curs=nexes
+    return counter
 
-def process_entry(entry,reqs:dict):
-    L=entry.split(',')
-    forbidden=set()
-    for e in L:
-        if e in forbidden:
-            return 0
-        forbidden|=reqs.get(e,set())
-    return int(L[len(L)//2])
+
+
+class Requirements:
+    def __init__(self,order):
+        reqs=defaultdict(set)
+        while order:
+            a,b=order.pop().split('|')
+            reqs[b].add(a)
+        self.reqs=reqs
+        return
+
+    def process_entry(self,entry):
+        L=entry.split(',')
+        forbidden=set()
+        for e in L:
+            if e in forbidden:
+                return 0
+            forbidden|=self.reqs.get(e,set())
+        return int(L[len(L)//2])
+
+    def filter_reqs(self,EL:list):
+        SE=set(EL)
+        res={}
+        for k,S in self.reqs.items():
+            S&=SE
+            if S:
+                res[k]=S
+        return res
+
+
+
+    def correct_entry(self,entry:str):
+        EL=entry.split(',')
+        valid=False
+        for i,e in enumerate(EL):
+            for j in range(i+1,len(EL)):
+                if EL[j] in self.reqs[e]:
+                    EL[i]=EL[j]
+                    EL[j]=e
+                    e=EL[i]
+                    valid=True
+        if valid:
+            return int(EL[len(EL)//2])
+        return 0
 
 
 def process_1(MM):
-    reqs=setup_reqs(MM[0])
+    reqs=Requirements(MM[0])
     res=0
     for e in MM[1]:
-        res+=process_entry(e,reqs)
+        res+=reqs.process_entry(e)
     return res
 
-def filter_reqs(EL:list,reqs):
-    SE=set(EL)
-    res={}
-    for k,S in reqs.items():
-        S&=SE
-        if S:
-            res[k]=S
-    return res
-
-def flatten_group_reqs(groups:dict,start):
-    while groups[start]!=groups[groups[start]]:
-        groups[start] != groups[groups[start]]
-
-
-def group_reqs(reqs:dict):
-    res={e:e for e in reqs}
-    for e,v in reqs.items():
-        while res[e]!=res[res[e]]:
-            res[e]=res[]
-
-def correct_entry(entry:str,reqs:dict):
-    eL=entry.split(',')
-    reqs=filter_reqs(EL,reqs)
-    logged={}
-    valid=False
-    if valid:
-        return int(L[len(L)//2])
-    return 0
-
-def process_2(MM):
-    reqs=setup_reqs(MM[0])
+def process_2(MM,debug=False):
+    reqs=Requirements(MM[0])
     res=0
     for e in MM[1]:
-        res+=correct_entry(e,reqs)
+        temp=reqs.correct_entry(e)
+        if debug:
+            print(f"{e}->{temp}",end=",")
+        res+=temp
     return res
 
 
@@ -75,6 +99,14 @@ TASK=__file__.split('\\')[-1][:-3]
 def runprocess(process:callable):
     inputbase=f"..\\inputs\\{TASK}.txt"
     data=read(inputbase)
+    datatemp=[
+        "75,97,47,61,53",
+        "61,13,29",
+        "1,2,3",
+        "97,13,75,29,47"
+    ]
+    result=process([data[0][:],datatemp],True)
+    print(result)
     result=process(data)
     print(result)
 
