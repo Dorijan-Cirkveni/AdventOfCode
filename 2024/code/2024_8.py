@@ -11,21 +11,48 @@ def read(filepath):
         print(err)
     return M
 
-
-def preprocess(s:str):
-    return {i:e for i,e in enumerate(s) if s not in set('.#')}
-
 class AntennaField:
     def __init__(self,grid_data):
         self.antennas={}
+        self.n=len(grid_data)
+        self.m=len(grid_data[0])
         for i,line in enumerate(grid_data):
+            for j,el in enumerate(line):
+                if el in '.#':
+                    continue
+                L:list=self.antennas.setdefault(el,[])
+                L.append((i,j))
+        return
+
+    def check_antpair(self,x1:int,y1:int,x2:int,y2:int,res:set):
+        dx=x2-x1
+        dy=y2-y1
+        A0=x1-dx,y1-dy
+        A3=x2+dx,y2+dy
+        for x,y in (A0,A3):
+            if x not in range(self.n):
+                continue
+            if y not in range(self.m):
+                continue
+            res.add((x,y))
+
+    def check_ant_type(self,mark:str, res:set):
+        L:list=self.antennas.get(mark,[])
+        for i,e in enumerate(L):
+            for j in range(i):
+                self.check_antpair(*e,*L[j],res=res)
+
+    def get_all_targets(self,res:set):
+        for e in self.antennas:
+            self.check_ant_type(e,res)
+        return len(res)
+
 
 
 def process_1(data):
-    res=0
-    antenna_locs={}
-    for entry in data:
-        processed=preprocess(entry)
+    AF=AntennaField(data)
+    res_set=set()
+    res=AF.get_all_targets(res_set)
     return res
 
 
@@ -53,7 +80,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(process_2,["","t"])
+    runprocess(process_2,["t",""])
     return
 
 

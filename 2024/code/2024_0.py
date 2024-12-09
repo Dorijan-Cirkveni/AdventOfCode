@@ -45,7 +45,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(process_2,["","t"])
+    runprocess(process_2,["t",""])
     return
 
 
