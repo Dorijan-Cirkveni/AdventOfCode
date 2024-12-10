@@ -48,9 +48,9 @@ class Fragment:
     last:Optional['Fragment'] = None
 
     def occupy_last(self,new:'Fragment'):
-        if self.id>=0:
-            return -1
         last:Fragment=self.last
+        if last.id>=0:
+            return -1
         diff=last.size-new.size
         if diff<0:
             return diff
@@ -67,11 +67,12 @@ class Fragment:
             return "..."
         cur=f"[{str(self.id) if self.id>=0 else 'X'}:{self.size}]"
         limit-=len(cur)
-        if not self.last:
-            return "|"
-        return self.last.print(limit)+cur
+        last="|"
+        if self.last:
+            last=self.last.print(limit)
+        return last+cur
 
-def diffprint(cur,last, protected='[:]'):
+def diffprint(cur,last,groups=5):
     d=len(last)-len(cur)
     cur+=" "*d
     last+=" "*(-d)
@@ -89,19 +90,27 @@ def preprocess_2(s:str)->tuple[Fragment,dict]:
     free={}
     ind=0
     used=True
+    pending_append=None
     rawind=0
     for i,e in enumerate(s):
         size=int(e)
         cur=ind if used else -1
         fr=Fragment(cur,size,last)
         if size:
+            if pending_append is not None:
+                L,remind=pending_append
+                L.append((remind,fr))
+                pending_append=None
             if not used:
-                free.setdefault(size,[]).append((rawind,fr))
+                pending_append=free.setdefault(size,[]),rawind
             last=fr
         used=not used
         ind+=used
         rawind+=size
-    print(last.print())
+    if used:
+        free[last.size].pop()
+        last=last.last
+    print({e:[(f[0],f[1].last.size) for f in v] for e,v in free.items()})
     return last,free
 
 
@@ -112,8 +121,9 @@ def compact_2(last:Fragment, free:dict):
     while free:
         nex=last.last
         target=last.size if last.id>=0 else -1
-        possible={e for e in free if e>=last.size}
+        possible={e for e in free if e>=target}
         if possible:
+            print("Possible")
             chosen=min(possible)
             que:list=free[chosen]
             ff:Fragment
@@ -123,6 +133,7 @@ def compact_2(last:Fragment, free:dict):
             diff=ff.occupy_last(last)
             ind+=last.size
             if diff:
+                print("New")
                 que=free.setdefault(diff,[])
                 heapq.heappush(que,(ind,ff))
         else:
