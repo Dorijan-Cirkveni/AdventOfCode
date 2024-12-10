@@ -133,7 +133,6 @@ def preprocess_2(s:str)->tuple[Fragment,dict]:
         used=not used
         ind+=used
         rawind+=size
-        print(last.print())
     if used:
         free[last.size].pop()
         last=last.last
@@ -145,20 +144,16 @@ def compact_2(last:Fragment, free:dict, rawind=int):
     right_arch=Fragment(0,0,last)
     right_cur_arch=right_arch
     lastprint=right_arch.print()
-    print("Status:",lastprint)
 
     while free and last:
-        print({e:len(v) for e,v in free.items()})
         nex=last.last
-        target=last.size if last.id>=0 else -1
         rawind-=last.size
         for e in set(free):
             E=free[e][0]
             if E[0]>rawind:
                 free.pop(e)
-        possible={e for e in free if e>=target}
+        possible={} if last.id<0 else {e for e in free if e>=last.size}
         if possible:
-            print("Possible")
             chosen=min(possible)
             que:list=free[chosen]
             ff:Fragment
@@ -168,9 +163,9 @@ def compact_2(last:Fragment, free:dict, rawind=int):
             diff=ff.occupy(last)
             ind+=last.size
             if diff:
-                print("New")
                 que=free.setdefault(diff,[])
                 heapq.heappush(que,(ind,ff))
+            nowprint=right_arch.print()
             last=Fragment(-1,last.size)
         if right_cur_arch.id==last.id:
             right_cur_arch.size+=last.size
@@ -180,7 +175,7 @@ def compact_2(last:Fragment, free:dict, rawind=int):
         last=nex
         right_cur_arch.add_to_left(last)
         nowprint=right_arch.print()
-        print("Status:",diffprint(nowprint,lastprint))
+        # print("Status:",diffprint(nowprint,lastprint))
         lastprint=nowprint
     return right_arch.last
 
@@ -188,24 +183,22 @@ def checksum(disk:list[int])->int:
     res=0
     for i,e in enumerate(disk):
         res+=i*e
-    ind=0
     return res
 
 
 def checksum_2(last:Fragment)->int:
-    L=[]
-    while last:
-        L.append((last.id,last.size))
+    while last.last:
         last=last.last
     res=0
     ind=0
-    while L:
-        cur_id,cur_size=L.pop()
-        cur_size+=ind
-        temp=cur_size*(cur_size+1)//2
-        temp-=ind*(ind+1)//2
-        res+=temp*cur_id
+    while last:
+        cur_size=ind+last.size
+        if last.id!=-1:
+            temp=cur_size*(cur_size-1)//2
+            temp-=ind*(ind-1)//2
+            res+=temp*last.id
         ind=cur_size
+        last=last.next
     return res
 
 
@@ -224,11 +217,8 @@ def process_2(data):
     res=0
     for entry in data:
         processed,free,size=preprocess_2(entry)
-        print(processed.print())
         resf=compact_2(processed,free,size)
-        print(resf.print())
         cures=checksum_2(resf)
-        print(cures)
         res+=cures
     return res
 
@@ -245,7 +235,6 @@ def runprocess_withinputfrom(process: callable, suffix:str=""):
 
 
 def runprocess(process: callable, input_files=None):
-
     if input_files is None:
         input_files = [""]
     for suffix in input_files:
@@ -253,7 +242,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(process_2,["t","q"])
+    runprocess(process_2,["t",""])
     return
 
 
