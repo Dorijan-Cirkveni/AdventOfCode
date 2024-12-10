@@ -1,5 +1,4 @@
 import heapq
-from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 
@@ -46,20 +45,47 @@ class Fragment:
     id:int
     size:int
     last:Optional['Fragment'] = None
+    next:Optional['Fragment'] = None
 
-    def occupy_last(self,new:'Fragment'):
-        last:Fragment=self.last
-        if last.id>=0:
-            return -1
-        diff=last.size-new.size
+    def add_to_left(self,left):
+        new:Fragment
+        if left:
+            left.next=self
+        self.last=left
+        return self
+
+    def insert_left(self,new):
+        if new is None:
+            return self
+        new:Fragment
+        last=self.last
+        self.last=new
+        new.last=last
+        if last:
+            last.next=new
+        new.next=self
+        return self
+
+    def remove(self):
+        last=self.last
+        nex=self.next
+        if last:
+            last.next=nex
+        if nex:
+            nex.last=last
+        return
+
+    def occupy(self,new:'Fragment'):
+        diff=self.size-new.size
         if diff<0:
             return diff
-        prev:Fragment=last.last
-        last.last=new
-        new.last=prev
+        new.last=self.last
+        new.next=self
+        self.last.next=new
+        self.last=new
+        self.size=diff
         if diff==0:
-            self.last=new
-        last.size=diff
+            self.remove()
         return diff
 
     def print(self,limit=100):
@@ -69,19 +95,24 @@ class Fragment:
         limit-=len(cur)
         last="|"
         if self.last:
+            self.last:Fragment
             last=self.last.print(limit)
         return last+cur
 
-def diffprint(cur,last,groups=5):
+def comprint(cur,last,start,end):
+    a=cur[start:end]
+    b=last[start:end]
+    if a==b:
+        return " "*len(a)
+    return a
+
+def diffprint(cur,last,groupsize=5,offset=1):
     d=len(last)-len(cur)
     cur+=" "*d
     last+=" "*(-d)
-    res=''
-    for a,b in zip(cur,last):
-        if a==b and a not in protected:
-            res+=' '
-        else:
-            res+=a
+    res=comprint(cur,last,0,offset)
+    for i in range(offset,len(cur),groupsize):
+        res+=comprint(cur,last,i,i+groupsize)
     return res
 
 
@@ -90,37 +121,41 @@ def preprocess_2(s:str)->tuple[Fragment,dict]:
     free={}
     ind=0
     used=True
-    pending_append=None
     rawind=0
     for i,e in enumerate(s):
         size=int(e)
         cur=ind if used else -1
-        fr=Fragment(cur,size,last)
+        fr=Fragment(cur,size)
         if size:
-            if pending_append is not None:
-                L,remind=pending_append
-                L.append((remind,fr))
-                pending_append=None
             if not used:
-                pending_append=free.setdefault(size,[]),rawind
-            last=fr
+                free.setdefault(size,[]).append((rawind,fr))
+            last=fr.add_to_left(last)
         used=not used
         ind+=used
         rawind+=size
+        print(last.print())
     if used:
         free[last.size].pop()
         last=last.last
-    print({e:[(f[0],f[1].last.size) for f in v] for e,v in free.items()})
-    return last,free
+        last.next.remove()
+    return last,free,rawind
 
 
-def compact_2(last:Fragment, free:dict):
+def compact_2(last:Fragment, free:dict, rawind=int):
     right_arch=Fragment(0,0,last)
     right_cur_arch=right_arch
     lastprint=right_arch.print()
-    while free:
+    print("Status:",lastprint)
+
+    while free and last:
+        print({e:len(v) for e,v in free.items()})
         nex=last.last
         target=last.size if last.id>=0 else -1
+        rawind-=last.size
+        for e in set(free):
+            E=free[e][0]
+            if E[0]>rawind:
+                free.pop(e)
         possible={e for e in free if e>=target}
         if possible:
             print("Possible")
@@ -130,19 +165,22 @@ def compact_2(last:Fragment, free:dict):
             ind,ff=heapq.heappop(que)
             if not que:
                 free.pop(chosen)
-            diff=ff.occupy_last(last)
+            diff=ff.occupy(last)
             ind+=last.size
             if diff:
                 print("New")
                 que=free.setdefault(diff,[])
                 heapq.heappush(que,(ind,ff))
+            last=Fragment(-1,last.size)
+        if right_cur_arch.id==last.id:
+            right_cur_arch.size+=last.size
         else:
-            right_cur_arch.last=last
+            right_cur_arch.add_to_left(last)
             right_cur_arch=last
         last=nex
-        right_cur_arch.last=last
-        nowprint=right_arch.last.print()
-        print(diffprint(nowprint,lastprint))
+        right_cur_arch.add_to_left(last)
+        nowprint=right_arch.print()
+        print("Status:",diffprint(nowprint,lastprint))
         lastprint=nowprint
     return right_arch.last
 
@@ -185,9 +223,9 @@ def process_1(data):
 def process_2(data):
     res=0
     for entry in data:
-        processed,free=preprocess_2(entry)
+        processed,free,size=preprocess_2(entry)
         print(processed.print())
-        resf=compact_2(processed,free)
+        resf=compact_2(processed,free,size)
         print(resf.print())
         cures=checksum_2(resf)
         print(cures)
@@ -215,7 +253,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(process_2,["t",""])
+    runprocess(process_2,["t","q"])
     return
 
 
