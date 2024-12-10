@@ -45,65 +45,118 @@ def compact(L:list):
 class Fragment:
     id:int
     size:int
-    branch:Optional['Fragment'] = None
+    last:Optional['Fragment'] = None
 
-    def occupy(self,other:'Fragment'):
-        other.branch=self
-        self.size-=other.size
-        return occupy_fragment
+    def occupy_last(self,new:'Fragment'):
+        if self.id>=0:
+            return -1
+        last:Fragment=self.last
+        diff=last.size-new.size
+        if diff<0:
+            return diff
+        prev:Fragment=last.last
+        last.last=new
+        new.last=prev
+        if diff==0:
+            self.last=new
+        last.size=diff
+        return diff
 
-def occupy_fragment(head:Fragment,new:Fragment):
-    arch=Fragment(0,0,head)
-    cur_arch=arch
-    while head and head.id>=0:
-        cur_arch=head
-        head=cur_arch.branch
-    if head:
-        cur_arch.branch=head.occupy(new)
-    return arch.branch
+    def print(self,limit=100):
+        if limit<=0:
+            return "..."
+        cur=f"[{str(self.id) if self.id>=0 else 'X'}:{self.size}]"
+        limit-=len(cur)
+        if not self.last:
+            return "|"
+        return self.last.print(limit)+cur
 
-def flatten(fr:Fragment,res:list):
-    while fr:
-        res.append(fr)
-        fr=fr.branch
-    return
+def diffprint(cur,last, protected='[:]'):
+    d=len(last)-len(cur)
+    cur+=" "*d
+    last+=" "*(-d)
+    res=''
+    for a,b in zip(cur,last):
+        if a==b and a not in protected:
+            res+=' '
+        else:
+            res+=a
+    return res
 
 
-def preprocess_2(s:str):
-    L=[]
+def preprocess_2(s:str)->tuple[Fragment,dict]:
+    last=None
     free={}
     ind=0
     used=True
+    rawind=0
     for i,e in enumerate(s):
+        size=int(e)
         cur=ind if used else -1
-        fr=Fragment(cur,int(e))
-        if not used:
-            free.setdefault(e,deque()).append(fr)
-        L.append(fr)
+        fr=Fragment(cur,size,last)
+        if size:
+            if not used:
+                free.setdefault(size,[]).append((rawind,fr))
+            last=fr
         used=not used
         ind+=used
-    return L,free
+        rawind+=size
+    print(last.print())
+    return last,free
 
-def compact_2(base:list[Fragment], free:dict):
-    rightUsed=[]
+
+def compact_2(last:Fragment, free:dict):
+    right_arch=Fragment(0,0,last)
+    right_cur_arch=right_arch
+    lastprint=right_arch.print()
     while free:
-        used_fr:Fragment=base.pop()
-        possible={e for e in free if e>=size}
+        nex=last.last
+        target=last.size if last.id>=0 else -1
+        possible={e for e in free if e>=last.size}
         if possible:
             chosen=min(possible)
-            que:deque=free[chosen]
-            free_ind=que.pop()
+            que:list=free[chosen]
+            ff:Fragment
+            ind,ff=heapq.heappop(que)
             if not que:
                 free.pop(chosen)
+            diff=ff.occupy_last(last)
+            ind+=last.size
+            if diff:
+                que=free.setdefault(diff,[])
+                heapq.heappush(que,(ind,ff))
         else:
-            rightUsed.append((ind,size))
-        while
-
+            right_cur_arch.last=last
+            right_cur_arch=last
+        last=nex
+        right_cur_arch.last=last
+        nowprint=right_arch.last.print()
+        print(diffprint(nowprint,lastprint))
+        lastprint=nowprint
+    return right_arch.last
 
 def checksum(disk:list[int])->int:
     res=0
     for i,e in enumerate(disk):
         res+=i*e
+    ind=0
+    return res
+
+
+def checksum_2(last:Fragment)->int:
+    L=[]
+    while last:
+        L.append((last.id,last.size))
+        last=last.last
+    res=0
+    ind=0
+    while L:
+        cur_id,cur_size=L.pop()
+        cur_size+=ind
+        temp=cur_size*(cur_size+1)//2
+        temp-=ind*(ind+1)//2
+        res+=temp*cur_id
+        ind=cur_size
     return res
 
 
@@ -113,14 +166,22 @@ def process_1(data):
     for entry in data:
         processed=preprocess(entry)
         compact(processed)
-        print(processed[:100])
         cures=checksum(processed)
         res+=cures
     return res
 
 
 def process_2(data):
-    return process_1(data)
+    res=0
+    for entry in data:
+        processed,free=preprocess_2(entry)
+        print(processed.print())
+        resf=compact_2(processed,free)
+        print(resf.print())
+        cures=checksum_2(resf)
+        print(cures)
+        res+=cures
+    return res
 
 
 TASK = __file__.split('\\')[-1][:-3]
