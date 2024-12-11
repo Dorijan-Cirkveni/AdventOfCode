@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+
 def read(filepath):
     M=None
     try:
@@ -9,16 +12,34 @@ def read(filepath):
     return M
 
 
-def preprocess(s:str):
-    return s
+def preprocess(i:int,s:str,starts:dict):
+    for j,e in enumerate(s):
+        if e=='0':
+            starts[(i,j)]=1
+
+def get_neigh(mat:list,e:tuple,v,target:str,nexset:defaultdict[tuple,int]):
+    i,j=e
+    for nei,nej in [(i,j-1),(i,j+1),(i-1,j),(i+1,j)]:
+        cur=mat[nei][nej]
+        if cur==target:
+            nexset[(nei,nej)]+=v
 
 
 
 def process_1(data):
-    res=0
-    for entry in data:
-        processed=preprocess(entry)
-    return res
+    for E in data:
+        E+=' '
+    data.append(' '*len(data[0]))
+    curset=dict()
+    for i,entry in enumerate(data):
+       preprocess(i,entry,curset)
+    for i in range(1,10):
+        c=str(i)
+        nexset=defaultdict(int)
+        for E,v in curset.items():
+            get_neigh(data,E,v,c,nexset)
+        curset=nexset
+    return sum(curset.values())
 
 
 def process_2(data):
