@@ -12,12 +12,37 @@ def read(filepath):
     return M
 
 
-def preprocess(i:int,s:str,starts:dict):
-    for j,e in enumerate(s):
-        if e=='0':
-            starts[(i,j)]=1
+def preprocess_all(data):
+    curset=defaultdict(set)
+    ind=0
+    for i,entry in enumerate(data):
+        for j,e in enumerate(entry):
+            if e=='0':
+                curset[(i,j)].add(ind)
+                ind+=1
+        data[i]=entry+' '
+    data.append(' '*len(data[0]))
+    return curset
 
-def get_neigh(mat:list,e:tuple,v,target:str,nexset:defaultdict[tuple,int]):
+
+def preprocess_all_2(data):
+    curset=defaultdict(int)
+    for i,entry in enumerate(data):
+        for j,e in enumerate(entry):
+            if e=='0':
+                curset[(i,j)]=1
+        data[i]=entry+' '
+    data.append(' '*len(data[0]))
+    return curset
+
+def get_neigh(mat:list,e:tuple,vs:set,target:str,nexset:defaultdict[tuple,set]):
+    i,j=e
+    for nei,nej in [(i,j-1),(i,j+1),(i-1,j),(i+1,j)]:
+        cur=mat[nei][nej]
+        if cur==target:
+            nexset[(nei,nej)]|=vs
+
+def get_neigh_2(mat:list,e:tuple,v:int,target:str,nexset:defaultdict[tuple,int]):
     i,j=e
     for nei,nej in [(i,j-1),(i,j+1),(i-1,j),(i+1,j)]:
         cur=mat[nei][nej]
@@ -27,24 +52,34 @@ def get_neigh(mat:list,e:tuple,v,target:str,nexset:defaultdict[tuple,int]):
 
 
 def process_1(data):
-    for E in data:
-        E+=' '
-    data.append(' '*len(data[0]))
-    curset=dict()
-    for i,entry in enumerate(data):
-       preprocess(i,entry,curset)
+    curset=preprocess_all(data)
+    print(curset)
     for i in range(1,10):
         c=str(i)
-        nexset=defaultdict(int)
+        nexset=defaultdict(set)
         for E,v in curset.items():
             get_neigh(data,E,v,c,nexset)
         curset=nexset
-    return sum(curset.values())
-
+        print(curset)
+    res=0
+    for V in curset.values():
+        res+=len(V)
+    return res
 
 def process_2(data):
-    return process_1(data)
-
+    curset:defaultdict[tuple,int]=preprocess_all_2(data)
+    print(curset)
+    for i in range(1,10):
+        c=str(i)
+        nexset:defaultdict[tuple,int]=defaultdict(int)
+        for E,v in curset.items():
+            get_neigh_2(data,E,v,c,nexset)
+        curset=nexset
+        print(curset)
+    res=0
+    for V in curset.values():
+        res+=V
+    return res
 
 TASK = __file__.split('\\')[-1][:-3]
 
