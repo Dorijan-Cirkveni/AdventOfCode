@@ -15,7 +15,7 @@ def preprocess(_i:int,s:str):
 
 class Solution:
     def __init__(self,data):
-        self.data=[]
+        self.data:list[list]=[]
         for i,entry in enumerate(data):
             processed=preprocess(i,entry)
             self.data.append(processed)
@@ -49,6 +49,18 @@ class Solution:
         if nulled=='@':
             print(area,perimeter,res)
         return res
+    def traverse_island_2(self,si,sj,val,nulled):
+        self.data: list[list][int]
+        curset={(si,sj)}
+        area=0
+        while curset:
+            nexset=set()
+            area+=len(curset)
+            for ci,cj in curset:
+                self.data[ci][cj]=nulled
+                self.get_neigh(ci,cj,val,nexset,nulled)
+            curset=nexset
+        return area
     def process_1(self):
         res=0
         for i,E in enumerate(self.data):
@@ -58,11 +70,73 @@ class Solution:
                 res+=self.traverse_island(i,j,e,'@')
                 self.traverse_island(i, j, '@')
         return res
-
-
+    def horizontal_sides(self,sides):
+        last=[-1]*len(self.data[0])
+        for i,cur in enumerate(self.data):
+            comb=(-1,-1)
+            for j,new_comb in enumerate(zip(last,cur)):
+                if new_comb==comb:
+                    continue
+                comb=new_comb
+                a,b=comb
+                if a==b:
+                    continue
+                sides[a]+=1
+                sides[b]+=1
+            print(*sides,sep='\t')
+            last=cur
+        print()
+        return
+    def vertical_sides(self,sides):
+        n=len(self.data)
+        m=len(self.data[0])
+        last=[-1]*n
+        for j in range(m):
+            comb=(-1,-1)
+            cur=[self.data[i][j] for i in range(n)]
+            for i,new_comb in enumerate(zip(last,cur)):
+                if new_comb==comb:
+                    continue
+                comb=new_comb
+                a,b=comb
+                if a==b:
+                    continue
+                sides[a]+=1
+                sides[b]+=1
+            print(*sides,sep='\t')
+            last=cur
+        print()
+        return
 
     def process_2(self):
-        return self.process_1()
+        areas=[]
+        sides=[]
+        ind=0
+        for i,E in enumerate(self.data):
+            E[-1]=-1
+        self.data[-1]=[-1]*len(self.data[0])
+        for i,E in enumerate(self.data):
+            for j,e in enumerate(E):
+                if isinstance(e,int):
+                    continue
+                area=self.traverse_island_2(i,j,e,ind)
+                areas.append(area)
+                sides.append(0)
+                ind+=1
+                print(e,end="\t")
+        print()
+        print(*areas,sep='\t')
+        sides.append(0)
+        self.vertical_sides(sides)
+        print(*sides,sep='\t')
+        self.horizontal_sides(sides)
+        sides.pop()
+        print(*sides,sep='\t')
+        res=0
+        while areas:
+            area,side=areas.pop(),sides.pop()
+            res+=area*side
+        return res
 
 
 TASK = __file__.split('\\')[-1][:-3]
@@ -85,7 +159,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(Solution.process_2,["t",""])
+    runprocess(Solution.process_2,["t","wasd"])
     return
 
 
