@@ -12,6 +12,27 @@ def read(filepath):
 def preprocess(_i:int,s:str):
     return list(s+' ')
 
+def check_state(cur,other,last_cur,last_other):
+    if cur==last_cur:
+        return last_cur==last_other
+    else:
+        return True
+
+def match(last:list[int],cur:list[int],sides:list[int]):
+    nex_last=-1,-1
+    for a,b in zip(last, cur):
+        last_a,last_b=nex_last
+        nex_last=a,b
+        if (last_a,last_b)==(a,b):
+            continue
+        if a==b:
+            continue
+        if check_state(a,b,last_a,last_b):
+            sides[a]+=1
+        if check_state(b,a,last_b,last_a):
+            sides[b]+=1
+    # print(*sides, sep='\t')
+
 
 class Solution:
     def __init__(self,data):
@@ -73,37 +94,16 @@ class Solution:
     def horizontal_sides(self,sides):
         last=[-1]*len(self.data[0])
         for i,cur in enumerate(self.data):
-            comb=(-1,-1)
-            for j,new_comb in enumerate(zip(last,cur)):
-                if new_comb==comb:
-                    continue
-                comb=new_comb
-                a,b=comb
-                if a==b:
-                    continue
-                sides[a]+=1
-                sides[b]+=1
-            print(*sides,sep='\t')
+            match(last,cur,sides)
             last=cur
-        print()
         return
     def vertical_sides(self,sides):
         n=len(self.data)
         m=len(self.data[0])
         last=[-1]*n
         for j in range(m):
-            comb=(-1,-1)
             cur=[self.data[i][j] for i in range(n)]
-            for i,new_comb in enumerate(zip(last,cur)):
-                if new_comb==comb:
-                    continue
-                comb=new_comb
-                a,b=comb
-                if a==b:
-                    continue
-                sides[a]+=1
-                sides[b]+=1
-            print(*sides,sep='\t')
+            match(last,cur,sides)
             last=cur
         print()
         return
@@ -159,7 +159,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(Solution.process_2,["t","wasd"])
+    runprocess(Solution.process_2,["t",""])
     return
 
 
