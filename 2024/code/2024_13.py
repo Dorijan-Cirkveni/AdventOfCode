@@ -12,35 +12,41 @@ def read(filepath):
     return M
 
 
-def process_line(s: str)->tuple[int,int]:
+def process_line(s: str) -> numpy.array:
     ind = s.index(':')
     s2 = s[ind + 2:]
-    L = s.split(', ')
-    a = int(L[0][2:])
-    b = int(L[1][2:])
-    return a, b
+    L=s2.split(', ')
+    L2=[int(e[2:]) for e in L]
+    res = numpy.array(L2)
+    return res
 
 
 def preprocess(s: str):
-    L = s.split("\n")
-    RES:list[tuple[int,int]] = [process_line(e) for e in L]
-    return RES
+    L = s.split('\n')
+    a, b, target = [process_line(e) for e in L[:3]]
+    return a, b, target
 
 
-def isSameDirection(E1: tuple[int, int], E2: tuple[int, int]):
-    return E1[0] * E2[1] == E2[0] * E1[1]
-
-def calculate_best(A,B,target):
-    for i in range(101):
-        div_a
-        target=target[0]-A[0],target[1]
+def calculate_best(first, second, target):
+    print(first)
+    print(second)
+    print(target)
+    M=numpy.column_stack([first,second])
+    if numpy.linalg.det(M)==0:
+        ratio=
+    res=numpy.linalg.solve([first,second],target)
+    print(res)
+    return 0
 
 
 def process_1(data):
     res = 0
     for entry in data:
-        processed:list[tuple[int,int]] = preprocess(entry)
-
+        A: tuple[int, int]
+        B: tuple[int, int]
+        T: tuple[int, int]
+        A, B, T = preprocess(entry)
+        res = calculate_best(A, B, T)
     return res
 
 
