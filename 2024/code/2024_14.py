@@ -68,13 +68,13 @@ def process_tree(
     a:int
     b:int
     temp:list[str]=result[b]
-    temp[a]='#'
+    temp[a]='.'
     return
 
 def doDisplay(positions:list[numpy.array],dimensions:tuple=(101, 103)):
     RES = [[' ']*dimensions[0] for _ in range(dimensions[1])]
     for pos in positions:
-        RES[pos[1]][pos[0]]='#'
+        RES[pos[1]][pos[0]]='.'
     return RES
 
 def printDisplay(RES):
@@ -89,10 +89,40 @@ def doStep(positions:list[numpy.array],moves:list[numpy.array],dimensions:tuple=
         positions[i]=cur
     return
 
-def getNeigh(M,i,j):
-    for di,dj in [(i,j-1),(i,j+1)]
+def getNeigh(M,i,j,target,curset:set):
+    for di,dj in [(i,j-1),(i,j+1)]:
+        if M[di][dj]!=target:
+            continue
+        curset.add((di,dj))
+    return
 
-def traverseIsland(M,i,j,land:str,checked:str)
+def traverseIsland(M,e,land:str,checked:str):
+    curset={e}
+    count=0
+    while curset:
+        nexset=set()
+        for i,j in curset:
+            M[i][j]=checked
+            count+=1
+            getNeigh(M,i,j,land,nexset)
+        curset=nexset
+    return count
+
+def detectClumps(M:list[list[str]], threshold=20, land:str='.', cleared:str='█'):
+    M.append([' ' for _ in M[0]])
+    res=False
+    for i,E in enumerate(M):
+        E.append(' ')
+        for j,e in enumerate(E):
+            if e!=land:
+                continue
+            cur_res=traverseIsland(M,(i,j),land,cleared)
+            if cur_res>=threshold:
+                res=True
+                continue
+            traverseIsland(M, (i, j),cleared,land)
+    return res
+
 
 def process_2(data, dimensions=(101, 103)):
     positions=[]
@@ -105,14 +135,27 @@ def process_2(data, dimensions=(101, 103)):
         start, step = processed
         positions.append(start)
         moves.append(step)
+    threshold=int('0'+input("Clump threshold:"))
+    batch=int('0'+input("Batch size:"))
+    batch=batch if batch else 1000
+    batchp=int('0'+input("Batch print size:"))
+    batchp=batchp if batch else 100
     res=0
-    doDisplay(positions,dimensions)
-    order=input("Start:")
+    order=''
+    M=doDisplay(positions,dimensions)
+    det=detectClumps(M)
     while not order:
-        res+=1
-        doStep(positions,moves,dimensions)
-        doDisplay(positions,dimensions)
+        while not det and (det is None or res%batch):
+            if not res%batchp:
+                print(res)
+            res+=1
+            doStep(positions,moves,dimensions)
+            M=doDisplay(positions,dimensions)
+            det=detectClumps(M,threshold)
+        printDisplay(M)
+        print(det)
         order=input(f"Move {res}:")
+        det=None
     return res
 
 
