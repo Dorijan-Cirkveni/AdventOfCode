@@ -116,7 +116,7 @@ def diffprint(cur,last,groupsize=5,offset=1):
     return res
 
 
-def preprocess_2(s:str)->tuple[Fragment,dict]:
+def preprocess_2(s:str)->tuple[Fragment,dict,int]:
     last=None
     free={}
     ind=0
@@ -130,6 +130,8 @@ def preprocess_2(s:str)->tuple[Fragment,dict]:
             if not used:
                 free.setdefault(size,[]).append((rawind,fr))
             last=fr.add_to_left(last)
+        elif used:
+            raise Exception('???')
         used=not used
         ind+=used
         rawind+=size
@@ -206,6 +208,8 @@ def checksum_2(last:Fragment)->int:
 def process_1(data):
     res=0
     for entry in data:
+        if not entry:
+            continue
         processed=preprocess(entry)
         compact(processed)
         cures=checksum(processed)
@@ -216,9 +220,12 @@ def process_1(data):
 def process_2(data):
     res=0
     for entry in data:
+        if not entry:
+            continue
         processed,free,size=preprocess_2(entry)
         resf=compact_2(processed,free,size)
         cures=checksum_2(resf)
+        print(cures)
         res+=cures
     return res
 
