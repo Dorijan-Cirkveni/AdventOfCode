@@ -84,12 +84,15 @@ class Solution:
         return area
     def process_1(self):
         res=0
+        count=0
         for i,E in enumerate(self.data):
             for j,e in enumerate(E):
                 if e==' ':
                     continue
                 res+=self.traverse_island(i,j,e,'@')
                 self.traverse_island(i, j, '@')
+                count+=1
+        print(count)
         return res
     def horizontal_sides(self,sides):
         last=[-1]*len(self.data[0])
@@ -143,6 +146,7 @@ TASK = __file__.split('\\')[-1][:-3]
 
 
 def runprocess_withinputfrom(process: callable, suffix:str=""):
+    print('-'*160)
     inputbase = f"..\\inputs\\{TASK}{suffix}.txt"
     data = read(inputbase)
     if data is not None:
@@ -159,7 +163,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(Solution.process_2,["t",""])
+    runprocess(Solution.process_1,["t","",'b'])
     return
 
 
