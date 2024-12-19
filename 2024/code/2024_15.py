@@ -14,6 +14,7 @@ def read(filepath):
 def make_warehouse(raw:list[str]):
     res=[]
     loc=None
+    obstacles=
     for i,E in enumerate(raw):
         le=
 
