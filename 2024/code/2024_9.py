@@ -1,6 +1,10 @@
 import heapq
+from collections import defaultdict
 from dataclasses import dataclass
+from heapq import heappush
 from typing import Optional
+
+from numpy.ma.extras import count_masked
 
 
 def read(filepath):
@@ -25,6 +29,53 @@ def preprocess(s:str):
         ind+=used
     return L
 
+
+def preprocess_2(s:str):
+    L=[-2]
+    ind=0
+    rawind=0
+    used=True
+    free:dict[int,list[int]]={}
+    for e in s:
+        n=int(e)
+        cur=[ind if used else -1]*n
+        L.extend(cur)
+        if not used:
+            free.setdefault(n,[]).append(rawind)
+        used=not used
+        ind+=used
+        rawind+=n
+    return L,free
+
+def find_first_free(free:dict[int,list[int]],minsize:int, limit:int):
+    X=[]
+    remove:set=set()
+    for key, e in free.items():
+        if key < minsize:
+            continue
+        if e[0]>=limit:
+            remove.add(key)
+            continue
+        E=e[0],key,e
+        X.append(E)
+    for e in remove:
+        free.pop(e)
+    return min(X) if X else None
+
+def get_first_free(free:dict[int,list[int]],minsize:int, limit:int):
+    E=find_first_free(free, minsize, limit)
+    if not E:
+        return -1
+    ind, size, heap=E
+    heapq.heappop(heap)
+    if not heap:
+        free.pop(size)
+    new_size=size-minsize
+    if new_size:
+        new_ind=ind+minsize
+        heappush(free[new_size],new_ind)
+    return ind
+
 def compact(L:list):
     curFree=0
     while True:
@@ -40,167 +91,35 @@ def compact(L:list):
         while L[-1]<0:
             L.pop()
 
-@dataclass
-class Fragment:
-    id:int
-    size:int
-    last:Optional['Fragment'] = None
-    next:Optional['Fragment'] = None
-
-    def add_to_left(self,left):
-        new:Fragment
-        if left:
-            left.next=self
-        self.last=left
-        return self
-
-    def insert_left(self,new):
-        if new is None:
-            return self
-        new:Fragment
-        last=self.last
-        self.last=new
-        new.last=last
-        if last:
-            last.next=new
-        new.next=self
-        return self
-
-    def remove(self):
-        last=self.last
-        nex=self.next
-        if last:
-            last.next=nex
-        if nex:
-            nex.last=last
-        return
-
-    def occupy(self,new:'Fragment'):
-        diff=self.size-new.size
-        if diff<0:
-            return diff
-        new.last=self.last
-        new.next=self
-        self.last.next=new
-        self.last=new
-        self.size=diff
-        if diff==0:
-            self.remove()
-        return diff
-
-    def print(self,limit=100):
-        if limit<=0:
-            return "..."
-        cur=f"[{str(self.id) if self.id>=0 else 'X'}:{self.size}]"
-        limit-=len(cur)
-        last="|"
-        if self.last:
-            self.last:Fragment
-            last=self.last.print(limit)
-        return last+cur
-
-def comprint(cur,last,start,end):
-    a=cur[start:end]
-    b=last[start:end]
-    if a==b:
-        return " "*len(a)
-    return a
-
-def diffprint(cur,last,groupsize=5,offset=1):
-    d=len(last)-len(cur)
-    cur+=" "*d
-    last+=" "*(-d)
-    res=comprint(cur,last,0,offset)
-    for i in range(offset,len(cur),groupsize):
-        res+=comprint(cur,last,i,i+groupsize)
-    return res
-
-
-def preprocess_2(s:str)->tuple[Fragment,dict,int]:
-    last=None
-    free={}
-    ind=0
-    used=True
-    rawind=0
-    for i,e in enumerate(s):
-        size=int(e)
-        cur=ind if used else -1
-        fr=Fragment(cur,size)
-        if size:
-            if not used:
-                free.setdefault(size,[]).append((rawind,fr))
-            last=fr.add_to_left(last)
-        elif used:
-            raise Exception('???')
-        used=not used
-        ind+=used
-        rawind+=size
-    if used:
-        free[last.size].pop()
-        last=last.last
-        last.next.remove()
-    return last,free,rawind
-
-
-def compact_2(last:Fragment, free:dict, rawind=int):
-    right_arch=Fragment(0,0,last)
-    right_cur_arch=right_arch
-    lastprint=right_arch.print()
-
-    while free and last:
-        nex=last.last
-        rawind-=last.size
-        for e in set(free):
-            E=free[e][0]
-            if E[0]>rawind:
-                free.pop(e)
-        possible={} if last.id<0 else {e for e in free if e>=last.size}
-        if possible:
-            chosen=min(possible)
-            que:list=free[chosen]
-            ff:Fragment
-            ind,ff=heapq.heappop(que)
-            if not que:
-                free.pop(chosen)
-            diff=ff.occupy(last)
-            ind+=last.size
-            if diff:
-                que=free.setdefault(diff,[])
-                heapq.heappush(que,(ind,ff))
-            nowprint=right_arch.print()
-            last=Fragment(-1,last.size)
-        if right_cur_arch.id==last.id:
-            right_cur_arch.size+=last.size
-        else:
-            right_cur_arch.add_to_left(last)
-            right_cur_arch=last
-        last=nex
-        right_cur_arch.add_to_left(last)
-        nowprint=right_arch.print()
-        # print("Status:",diffprint(nowprint,lastprint))
-        lastprint=nowprint
-    return right_arch.last
+def compact_2(L:list, free:defaultdict[int,list[int]]):
+    right=[]
+    curind=len(L)-1
+    while L[-1]!=-2:
+        cur=L[-1]
+        count=0
+        while L[-1]==cur:
+            L.pop()
+            count+=1
+        curind-=count
+        if cur==-1:
+            right+=[cur]*count
+            continue
+        free_spot=get_first_free(free,count,curind)
+        if free_spot != -1:
+            for i in range(free_spot+1,free_spot+count+1):
+                L[i]=cur
+            cur=-1
+        right+=[cur]*count
+    L.pop()
+    right.reverse()
+    return right
 
 def checksum(disk:list[int])->int:
     res=0
     for i,e in enumerate(disk):
+        if e<0:
+            continue
         res+=i*e
-    return res
-
-
-def checksum_2(last:Fragment)->int:
-    while last.last:
-        last=last.last
-    res=0
-    ind=0
-    while last:
-        cur_size=ind+last.size
-        if last.id!=-1:
-            temp=cur_size*(cur_size-1)//2
-            temp-=ind*(ind-1)//2
-            res+=temp*last.id
-        ind=cur_size
-        last=last.next
     return res
 
 
@@ -222,10 +141,11 @@ def process_2(data):
     for entry in data:
         if not entry:
             continue
-        processed,free,size=preprocess_2(entry)
-        resf=compact_2(processed,free,size)
-        cures=checksum_2(resf)
-        print(cures)
+        processed,free=preprocess_2(entry)
+        processed=compact_2(processed,free)
+        for e in '':
+            print('.' if e==-1 else e,end='')
+        cures=checksum(processed)
         res+=cures
     return res
 
