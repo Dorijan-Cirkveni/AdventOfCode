@@ -107,12 +107,12 @@ class Computer:
 
 def process_1(data):
     res = 0
-    regs, programs = preprocess_data(data)
+    reqs, programs = preprocess_data(data)
     for program in programs:
-        comp = Computer(regs[:])
+        comp = Computer(reqs[:])
         output = comp.process(program)
         print(*output, sep=',')
-        print(simplified(regs[0]))
+        print(simplified(reqs[0]))
     return res
 
 
@@ -125,29 +125,11 @@ def forwardStep(first: int):
     return second & 7
 
 
-def findMaskFor(first: int, found: int, known: int, target: int, limit:int):
-    known |= first
-    second = first ^ 2
-    target ^= 3
-    target ^= second
-    target <<= second
-    if (target & found) & (~known):
-        return None
-    found |= 7 << second
-    known |= target
-    return found >> 3, known >> 3
-
-
-def findOptionsFor(target: int, found: int, known: int, RES: list, limit:int):
-    firsts = [i for i in range(8) if (i & found) & (~known) == 0]
-    found|=7
-    for first in firsts:
-        res=findMaskFor(first,found,known,target,limit)
-        if res is None:
-            continue
-        RES.append(res)
-
-
+def listToOct(cur: list):
+    val = 0
+    for i, e in enumerate(cur):
+        val |= e << (i * 3)
+    return val
 
 
 def simplified(start: int):
@@ -159,37 +141,83 @@ def simplified(start: int):
     return res
 
 
-def find_lowest(program: list):
-    for start in range(8):
-        tres = 0
-    return tres
+def isMatchToKnown(value,found,known):
+    masked=value&found
+    missed=masked&(~known)
+    return missed==0
 
 
-def process_test(data):
-    regs, programs = preprocess_data(data)
-    program = programs[0]
-    print(program)
-    tests = [
-        [1],
-        [7, 1],
-        []
-    ]
-    for testval in [1, 2, 10, 69, 420]:
-        regs[0] = testval
-        comp = Computer()
+def findMaskFor(first: int, found: int, known: int, target: int):
+    second = first ^ 2
+    target ^= 3
+    target ^= second
+    target <<= second
+    if not isMatchToKnown(target,found,known):
+        return None
+    found |= 7 << second
+    known |= target
+    return found >> 3, known >> 3
 
+
+def test(num, reqs: list[int], program: list[int]):
+    reqs[0] = num
+    comp = Computer(reqs[:])
+    output = comp.process(program[:])
+    return output
+
+
+def findOptionsFor(target: int, found: int, known: int, cur: list, *data,program):
+    RES = []
+    firsts = [i for i in range(8) if isMatchToKnown(i,found,known)]
+    found |= 7
+    for first in firsts:
+        res = findMaskFor(first, found, known|first, target)
+        solution = cur + [first]
+        if res is None:
+            continue
+        a, b = res
+        solres = solution, a, b
+        print(solres,test(*data,program))
+        RES.append(solres)
+    return RES
+
+
+def checkAll(program: list[int], *data):
+    found = 511 << (len(program) * 3)
+    print(oct(found))
+    known = 0
+    empty = []
+    starter = (empty, found, known)
+    curlist = [starter]
+    for i, target in enumerate(program):
+        nexlist = []
+        while curlist:
+            cur, found, known = curlist.pop()
+            temp = findOptionsFor(target, found, known, cur, *data,program=program)
+            nexlist += temp
+        curlist = nexlist
+        print(f"{i + 1}/{len(program)}", len(nexlist))
+    best = 1 << 32
+    while curlist:
+        cur = curlist.pop()[0]
+        val = listToOct(cur)
+        output = test(val, *data)
+        print(oct(val), val, output, program)
+        if val < best:
+            best = val
+
+    return best
 
 def process_2(data):
-    regs, programs = preprocess_data(data)
+    reqs, programs = preprocess_data(data)
     program = programs[0]
-    print(program)
-    res = find_lowest(program[:])
+    for X in [6,42,300]:
+        print(X,test(X,reqs,program))
+    program_input = [1,4,5]
+    print(program_input)
+    res = checkAll(program_input[:], reqs, program)
     for i in [res]:
-        regs[0] = i
-        comp = Computer(regs[:])
-        output = comp.process(program)
-        check = find_lowest(output)
-        print(f"{i}:", output, check)
+        print(i,test(i,reqs,program))
     return res
 
 
@@ -212,7 +240,7 @@ def runprocess(process: callable, input_files=None):
 
 
 def main():
-    runprocess(process_1, [""])
+    runprocess(process_2, [""])
     return
 
 
