@@ -125,44 +125,29 @@ def forwardStep(first: int):
     return second & 7
 
 
-def getExp(start):
-    X = [1 << start]
-    X.append(X[-1] << 1)
-    X.append(X[-1] << 1)
-    return X
-
-
-def findMaskFor(first: int, found: int, known: int, target: int):
-    found |= 3
-    # first &= 7
+def findMaskFor(first: int, found: int, known: int, target: int, limit:int):
+    known |= first
     second = first ^ 2
-    iters = ['']
+    target ^= 3
+    target ^= second
+    target <<= second
+    if (target & found) & (~known):
+        return None
+    found |= 7 << second
+    known |= target
+    return found >> 3, known >> 3
 
-    target^=3
 
-    for i in range(second, second + 3):
-        exp = 1 << i
-        if found & exp:
-            add = '01'[known & exp != 0]
-            iters = [add + e for e in iters]
+def findOptionsFor(target: int, found: int, known: int, RES: list, limit:int):
+    firsts = [i for i in range(8) if (i & found) & (~known) == 0]
+    found|=7
+    for first in firsts:
+        res=findMaskFor(first,found,known,target,limit)
+        if res is None:
             continue
-        found |= exp
-        nexiters = []
-        for e in iters:
-            nexiters += ['0' + e, '1' + e]
-    res = []
-    nexfirst = first >> 3
-    found >>= 3
-    for s in iters:
-        chosen = int(s, 2)
-        newsecond = chosen ^ second
-        newsecond &= 7
-        if newsecond != target:
-            continue
-        newknown = known | (chosen << second)
-        newel = nexfirst, found, newknown >> 3
-        res.append(newel)
-    return res
+        RES.append(res)
+
+
 
 
 def simplified(start: int):
