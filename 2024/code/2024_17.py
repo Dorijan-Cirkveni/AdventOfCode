@@ -51,6 +51,11 @@ class Computer:
         self.registers = registers
         self.output = []
 
+    def instantiate(self, new_first: int):
+        new = Computer(self.registers)
+        new.registers[0] = new_first
+        return new
+
     def get_value(self, operand: int):
         if operand < 4:
             return operand
@@ -116,6 +121,18 @@ def process_1(data):
     return res
 
 
+P2DATA = preprocess_data(read("..\\inputs\\2024_17.txt"))
+P2COMP = Computer(P2DATA[0])
+
+
+def test_part2(new_first:int):
+    assert isinstance(new_first,int)
+    cur = P2COMP.instantiate(new_first)
+    program=P2DATA[1][0]
+    res = cur.process(program)
+    return res
+
+
 def forwardStep(first: int):
     second = first & 7
     second ^= 2
@@ -125,7 +142,7 @@ def forwardStep(first: int):
     return second & 7
 
 
-def listToOct(cur: list):
+def listToInt(cur: list):
     val = 0
     for i, e in enumerate(cur):
         val |= e << (i * 3)
@@ -140,11 +157,13 @@ def simplified(start: int):
         res.append(cures)
     return res
 
+def simplified_check()
 
-def isMatchToKnown(value,found,known):
-    masked=value&found
-    missed=masked&(~known)
-    return missed==0
+
+def isMatchToKnown(value, found, known):
+    masked = value & found
+    missed = masked & (~known)
+    return missed == 0
 
 
 def findMaskFor(first: int, found: int, known: int, target: int):
@@ -152,39 +171,36 @@ def findMaskFor(first: int, found: int, known: int, target: int):
     target ^= 3
     target ^= second
     target <<= second
-    if not isMatchToKnown(target,found,known):
+    if not isMatchToKnown(target, found, known):
         return None
     found |= 7 << second
     known |= target
     return found >> 3, known >> 3
 
 
-def test(num, reqs: list[int], program: list[int]):
-    reqs[0] = num
-    comp = Computer(reqs[:])
-    output = comp.process(program[:])
-    return output
-
-
-def findOptionsFor(target: int, found: int, known: int, cur: list, *data,program):
+def findOptionsFor(target: int, found: int, known: int, limit: int, cur: list):
     RES = []
-    firsts = [i for i in range(8) if isMatchToKnown(i,found,known)]
+    if limit > 8:
+        limit = 8
+    seconds = [i for i in range(limit) if isMatchToKnown(i ^ 2, found, known)]
     found |= 7
-    for first in firsts:
-        res = findMaskFor(first, found, known|first, target)
+    for second in seconds:
+        first = second ^ 2
+        res = findMaskFor(first, found, known | first, target)
         solution = cur + [first]
         if res is None:
             continue
         a, b = res
         solres = solution, a, b
-        print(solres,test(*data,program))
+        n=listToInt(solution)
+        print(solres, oct(n), test_part2(n))
         RES.append(solres)
     return RES
 
 
-def checkAll(program: list[int], *data):
-    found = 511 << (len(program) * 3)
-    print(oct(found))
+def checkAll(program: list[int]):
+    limit = len(program) * 3
+    found = 63 << limit
     known = 0
     empty = []
     starter = (empty, found, known)
@@ -193,31 +209,33 @@ def checkAll(program: list[int], *data):
         nexlist = []
         while curlist:
             cur, found, known = curlist.pop()
-            temp = findOptionsFor(target, found, known, cur, *data,program=program)
+            temp = findOptionsFor(target, found, known, limit, cur)
             nexlist += temp
         curlist = nexlist
         print(f"{i + 1}/{len(program)}", len(nexlist))
+        limit -= 3
     best = 1 << 32
     while curlist:
         cur = curlist.pop()[0]
-        val = listToOct(cur)
-        output = test(val, *data)
+        val = listToInt(cur)
+        output = test_part2(val)
         print(oct(val), val, output, program)
         if val < best:
             best = val
 
     return best
 
+
 def process_2(data):
     reqs, programs = preprocess_data(data)
     program = programs[0]
-    for X in [6,42,300]:
-        print(X,test(X,reqs,program))
-    program_input = [1,4,5]
+    for X in [6, 42, 300]:
+        print(X, oct(X), test_part2(X))
+    program_input = [1, 4, 5]
     print(program_input)
-    res = checkAll(program_input[:], reqs, program)
+    res = checkAll(program_input[:])
     for i in [res]:
-        print(i,test(i,reqs,program))
+        print(i, test_part2(i))
     return res
 
 
@@ -230,6 +248,7 @@ def runprocess_withinputfrom(process: callable, suffix: str = ""):
     if data is not None:
         result = process(data)
         print(f"Result for {suffix}: {result}")
+        return result
 
 
 def runprocess(process: callable, input_files=None):
