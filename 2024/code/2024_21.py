@@ -46,10 +46,23 @@ class GroupedPriorityQueue:
             self.groups[key]={value}
     def check(self):
         return bool(self.pq)
-    def pop_group(self):
+    def pop_group(self)->[int,set]:
         key=heapq.heappop(self.pq)
         value=self.groups.pop(key)
         return key,value
+    def pop(self):
+        key=self.pq[0]
+
+def add_A(direction_costs:dict[tuple,int],sub_direction_costs:dict[tuple,dict[tuple,int]], ack:tuple):
+    res=float('inf')
+    for last,cost in direction_costs.items():
+        if last == ack:
+            continue
+        cost+=sub_direction_costs[last][ack]
+        if res>cost:
+            res=cost
+    assert res!=float('inf')
+    return int(res)
 
 
 class Keypad:
@@ -114,36 +127,68 @@ class Keypad:
             if res>cures:
                 res=cures
         return res
-    def makeDirectionCosts(self,sub_direction_costs=None):
+    def makeMoveCosts(self,sub_direction_costs=None)->dict[tuple,dict[tuple,int]]:
         if sub_direction_costs is None:
             sub_direction_costs = {}
-        dir_costs={e:{} for e in self.directions}
+        dir_costs:dict[tuple,dict[tuple,dict[tuple,int]]]={e:{} for e in self.directions}
         gpq=GroupedPriorityQueue()
         for e in dir_costs:
-            gpq.add(1,(e,e))
+            gpq.add(1,(e,'A',e))
         while gpq.check():
             cur_cost,values=gpq.pop_group()
             while values:
-                cur,target=values.pop()
-                if dir_costs[cur].get(target,cur_cost+1)<=cur_cost:
+                cur,last,target=values.pop()
+                if dir_costs[cur].setdefault(target,{}).get(last,cur_cost+1)<=cur_cost:
                     continue
-                dir_costs[cur][target]=cur_cost
+                dir_costs[cur][target][last]=cur_cost
                 for dest in self.getNeigh(*target):
-                    if dir_costs[cur].get(dest,cur_cost+1)<=cur_cost:
-                        continue
                     curdir=self.directions[cur]
-                    val=min(curdir[dest])
-                    cost=sub_direction_costs.get(val,1)
+                    val=min(curdir[dest]) if curdir[dest] else 'A'
+                    if dir_costs[cur].setdefault(dest,{}).get(val,cur_cost+1)<=cur_cost:
+                        continue
+                    cost=sub_direction_costs.get(last,{}).get(val,1)
                     cost+=cur_cost
-                    gpq.add(cost,(cur,dest))
-
-        return dir_costs
+                    gpq.add(cost,(cur,val,dest))
+        res={}
+        for e1, v1 in dir_costs.items():
+            res1={}
+            res[e1]=res1
+            for e2, v2 in v1.items():
+                res2=add_A(v2,sub_direction_costs,self.positions['A'])
+                res1[e2]=res2
+        return res
+    def makeDirCosts(self,sub_direction_costs=None):
+        move_costs=self.makeMoveCosts(sub_direction_costs)
+        anti_positions={e:i for i,e in self.positions.items()}
+        res={}
+        for e,v in move_costs.items():
+            e:tuple[int,int]
+            res1={}
+            f=anti_positions[e]
+            res[f]=res1
+            for e2,v2 in v.items():
+                e2:tuple[int,int]
+                f2=anti_positions[e2]
+                res1[f2]=v2
+        return res
 
 num_keypad=Keypad('789 456 123  0A')
 dir_keypad=Keypad(' ^A <v>')
-test=num_keypad.makeDirectionCosts()
-for e,v in test.items():
-    print(e,v)
+def print_dists(dists:dict[tuple,dict[tuple,int]]):
+    L=list(dists)
+    L.sort()
+    print(" "+"".join(L))
+    for e in L:
+        V=dists[e]
+        L2=[str(V[f]) for f in L]
+        print(e+"".join(L2))
+
+first=dir_keypad.makeDirCosts()
+second=dir_keypad.makeDirCosts(first)
+third=num_keypad.makeDirCosts(second)
+print_dists(first)
+print_dists(second)
+print_dists(third)
 
 
 def process_1(data):
