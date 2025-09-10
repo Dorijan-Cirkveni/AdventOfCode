@@ -9,49 +9,58 @@ class Circuit:
     def add_gate(self,dest:str,mode:int,orig:list[str]):
         for orig_inst in orig:
             self.dest.setdefault(orig_inst,{})[dest]=mode
+        self.orig[dest]=set(orig)
         self.values[dest]=[False,True,False][mode]
         self.mode[dest]=mode
     def set_orig(self):
+        self.orig={}
         for orig,dest_list in self.dest.items():
             for dest in dest_list:
                 self.orig.setdefault(dest,set()).add(orig)
     def simplify(self):
         stack=[]
-        for key in self.orig:
-            if key not in self.dest:
+        for key in self.dest:
+            if key not in self.orig:
                 stack.append(key)
+        counts={e:len(v) for e,v in self.orig.items()}
+        node_prev_sets:dict[str,set[str]]={}
         while stack:
             cur:str=stack.pop()
-            val=self.values[cur]
             next_dict=self.dest.pop(cur,{})
             for nex,mode in next_dict.items():
-                old=self.values[nex]
-                new=[old|val,old&val,old^val][mode]
-                self.values[nex]=new
-                self.orig[nex]-={cur}
-                if not self.orig[nex]:
-                    stack.append(nex)
-                    self.orig.pop(nex)
-        return {e:v for e,v in self.values.items() if e[0]=='z'}
+                counts[nex]-=1
+                if counts[nex]:
+                    continue
+                counts.pop(nex)
+                curset=set()
+                for old in self.orig[nex]:
+                    if self.mode.get(old,-1)==mode:
+                        curset|=node_prev_sets.get(old,set())
+                    else:
+                        curset.add(old)
+                node_prev_sets[nex]=curset
+                stack.append(nex)
+        return
 
     def process(self):
+        values=self.values.copy()
         stack=[]
-        for key in self.values:
+        for key in values:
             if key not in self.orig:
                 stack.append(key)
         while stack:
             cur:str=stack.pop()
-            val=self.values[cur]
+            val=values[cur]
             next_dict=self.dest.pop(cur,{})
             for nex,mode in next_dict.items():
-                old=self.values[nex]
+                old=values[nex]
                 new=[old|val,old&val,old^val][mode]
-                self.values[nex]=new
+                values[nex]=new
                 self.orig[nex]-={cur}
                 if not self.orig[nex]:
                     stack.append(nex)
                     self.orig.pop(nex)
-        return {e:v for e,v in self.values.items() if e[0]=='z'}
+        return {e:v for e,v in values.items() if e[0]=='z'}
 
 
 
