@@ -11,7 +11,7 @@ def read(filepath):
 
 def preprocess(s:str):
     n=int(s[1:])
-    return n if s[0]=='L' else -n
+    return n if s[0]=='R' else -n
 
 
 
@@ -29,17 +29,20 @@ def process_1(data):
 def process_2(data):
     res=0
     state=50
-    counter=dict()
     for entry in data:
         processed=preprocess(entry)
-        nex=state+processed
-        round1=(state+int(processed<0))//100
-        round2=(nex+int(processed<0))//100
-        diff=abs(round1-round2)
-        res+=diff
-        counter[diff]=counter.get(diff,0)+1
-        state=nex%100
-    print(counter)
+        if processed==0:
+            continue
+        prefix=1 if processed>0 else -1
+        diff,processed=divmod(abs(processed),100)
+        processed*=prefix
+        res += diff
+        for cur in range(state+processed,state,-prefix):
+            if cur in (0,100):
+                res+=1
+        # print(entry,state,diff,processed,prefix,res,(state+processed),sep="\t")
+        state+=processed
+        state%=100
     return res
 
 
