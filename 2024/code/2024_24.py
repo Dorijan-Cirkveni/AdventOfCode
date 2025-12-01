@@ -17,29 +17,6 @@ class Circuit:
         for orig,dest_list in self.dest.items():
             for dest in dest_list:
                 self.orig.setdefault(dest,set()).add(orig)
-    def simplify(self):
-        stack=[]
-        for key in self.dest:
-            if key not in self.orig:
-                stack.append(key)
-        counts={e:len(v) for e,v in self.orig.items()}
-        node_prev_sets:dict[str,set[str]]={}
-        while stack:
-            cur:str=stack.pop()
-            next_dict=self.dest.pop(cur,{})
-            for nex,mode in next_dict.items():
-                counts[nex]-=1
-                if counts[nex]:
-                    continue
-                counts.pop(nex)
-                curset=set()
-                for old in self.orig[nex]:
-                    if self.mode.get(old,-1)==mode:
-                        curset|=node_prev_sets.get(old,set())
-                    else:
-                        curset.add(old)
-                node_prev_sets[nex]=curset
-                stack.append(nex)
         return
 
     def process(self):
@@ -61,6 +38,53 @@ class Circuit:
                     stack.append(nex)
                     self.orig.pop(nex)
         return {e:v for e,v in values.items() if e[0]=='z'}
+
+
+    def print_dependencies(self):
+        stack=[]
+        for key in self.values:
+            if key not in self.orig:
+                stack.append(key)
+        core_keys:dict[str,set[str]]={}
+        while stack:
+            cur:str=stack.pop()
+            cur_mode:int=self.mode.get(cur,-1)
+            next_dict=self.dest.get(cur,{})
+            for nex,mode in next_dict.items():
+                self.orig[nex]-={cur}
+                curset:set=core_keys.setdefault(nex,set())
+                if cur_mode==mode:
+                    temp:set=core_keys.get(cur,set())
+                    curset|=temp
+                else:
+                    curset.add(cur)
+                if not self.orig[nex]:
+                    stack.append(nex)
+        valid=set()
+        for curset in core_keys.values():
+            valid|=curset
+        for key,val in core_keys.items():
+            if key not in valid:
+                continue
+            print(key, self.mode.get(key,-1), val)
+        return
+
+    def print_dep_tree(self, val, op:int=-1)->list[str]:
+        if val not in self.orig:
+            return [val]
+        new_op=self.mode.get(val,-1)
+        results=[]
+        curset=self.orig.get(val,set())
+        for pre in curset:
+            cures=self.print_dep_tree(pre,new_op)
+            results.extend(cures)
+        if not results:
+            results.append(val)
+        if op!=new_op:
+            sop="+-^?"[op]
+            results=[f" {sop} ".join(results)]
+        return results
+
 
 
 
@@ -98,7 +122,23 @@ def process_1(data):
 
 
 def process_2(data):
-    return process_1(data)
+    circuit = Circuit()
+    for entry in data:
+        if not entry:
+            continue
+        detail = entry.split(" ")
+        if len(detail) == 2:
+            name = detail[0][:-1]
+            value = bool(int(detail[1]))
+            circuit.add_value(name, value)
+        else:
+            mode = ['OR', 'AND', 'XOR'].index(detail[1])
+            circuit.add_gate(detail[4], mode, [detail[0], detail[2]])
+    exits=[el for el in circuit.values if el[0]=='z']
+    for el in exits:
+        print(el, end= "->")
+        print(circuit.print_dep_tree(el))
+    return 0
 
 
 TASK = __file__.split('\\')[-1][:-3]
