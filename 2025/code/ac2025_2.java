@@ -1,6 +1,7 @@
 package code;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 
 public class ac2025_2 extends ac2025{
     public static void main(String[] args) {
@@ -8,13 +9,17 @@ public class ac2025_2 extends ac2025{
         main.submain(2);
     }
 
+    public static long gaussSum(long n) {return (n*(n+1))/2;}
+
+    public static long gaussDiff(long a, long b) {return gaussSum(b)-gaussSum(a);}
+
     public long findLastWrong(long first) {
         if (first<11) return 0;
         String s_first=""+first;
         int half=s_first.length()/2;
-        if (s_first.length()%1==1){
+        if (s_first.length()%2==1){
             s_first="9".repeat(half);
-            return Long.parseLong(s_first.repeat(2));
+            return Long.parseLong(s_first);
         }
         long left_half=Long.parseLong(s_first.subSequence(0, half).toString());
         long right_half=Long.parseLong(s_first.subSequence(half,half*2).toString());
@@ -23,18 +28,27 @@ public class ac2025_2 extends ac2025{
         return right_half;
     }
 
-    public long findAllBelow(long last){
-        long b=(""+last).length();
-        long res=(long)Math.pow(10, (b-1)/2);
-        long halfwrong=findLastWrong(b);
-        res+=halfwrong;
+    public long sumAllBelow(long last){
+        long halfwrong=findLastWrong(last);
+        long res=0;
+        long cur=1;
+        System.out.println(""+cur+"-"+halfwrong);
+        while (cur<=halfwrong) {
+            long nex=Math.max(halfwrong+1, cur*10);
+            long cur_res=gaussDiff(cur-1, nex-1);
+            if(cur>nex) throw new InputMismatchException();
+            cur_res*=cur*10+1;
+            System.out.println("> "+cur+"\t"+nex+"\t"+cur_res);
+            res+=cur_res;
+            cur=nex;
+        }
         return res;
     }
 
-    public long findRange(long first, long last) {
+    public long sumRange(long first, long last) {
         long res=0;
-        res+=findAllBelow(last);
-        res-=findAllBelow(first-1);
+        res+=sumAllBelow(last);
+        res-=sumAllBelow(first-1);
         return res;
     }
 
@@ -59,8 +73,8 @@ public class ac2025_2 extends ac2025{
         long res=0;
         for (Long[] el : elements){
             long a=el[0];long b=el[1];
-            long tempres=this.findRange(a, b);
-            System.out.printf("%s %s|%s",a,b,tempres);
+            long tempres=this.sumRange(a, b);
+            System.out.printf("%s\t\t%s|%s\n",a,b,tempres);
             res+=tempres;
         }
         return "Running step one, result = "+res;// Default preprocessing (identity function)
