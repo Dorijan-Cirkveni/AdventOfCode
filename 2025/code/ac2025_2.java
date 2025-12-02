@@ -32,13 +32,13 @@ public class ac2025_2 extends ac2025{
         long halfwrong=findLastWrong(last);
         long res=0;
         long cur=1;
-        System.out.println(""+cur+"-"+halfwrong);
+        // System.out.println(""+cur+"-"+halfwrong);
         while (cur<=halfwrong) {
-            long nex=Math.max(halfwrong+1, cur*10);
+            long nex=Math.min(halfwrong+1, cur*10);
             long cur_res=gaussDiff(cur-1, nex-1);
             if(cur>nex) throw new InputMismatchException();
             cur_res*=cur*10+1;
-            System.out.println("> "+cur+"\t"+nex+"\t"+cur_res);
+            // System.out.println("> "+cur+"\t"+nex+"\t"+cur_res);
             res+=cur_res;
             cur=nex;
         }
@@ -49,6 +49,31 @@ public class ac2025_2 extends ac2025{
         long res=0;
         res+=sumAllBelow(last);
         res-=sumAllBelow(first-1);
+        return res;
+    }
+
+    public static Long expand(Long cur, int repeats){
+        return Long.parseLong(cur.toString().repeat(repeats));
+    }
+    public static boolean isPair(Long cur){
+        String check=cur.toString();
+        int len=check.length();
+        if (len%2==1) return false;
+        len/=2;
+        return check.substring(0,len).equals(check.substring(len));
+    }
+    public long sumRange(long first, long last, int repeats){
+        Long cur=0L;
+        Long cur_ref=0L;
+        while (cur_ref<first) {
+            cur++; cur_ref=expand(cur, repeats);
+        }
+        Long res=0L;
+        while (cur_ref<=last) {
+            if (!isPair(cur)) res+=cur_ref;
+            cur++;
+            cur_ref=expand(cur, repeats);
+        }
         return res;
     }
 
@@ -71,16 +96,32 @@ public class ac2025_2 extends ac2025{
     public String step1(List<String> ls) {
         List<Long[]> elements=this.parseLine(ls);
         long res=0;
+        long maxval=0;
         for (Long[] el : elements){
             long a=el[0];long b=el[1];
             long tempres=this.sumRange(a, b);
-            System.out.printf("%s\t\t%s|%s\n",a,b,tempres);
+            maxval=Math.max(maxval, b);
+            // System.out.printf("%s\t\t%s|%s\n",a,b,tempres);
             res+=tempres;
         }
-        return "Running step one, result = "+res;// Default preprocessing (identity function)
+        return "Running step one, max="+maxval+", result = "+res;// Default preprocessing (identity function)
     }
 
     public String step2(List<String> ls) {
-        return "Running step two";// Default preprocessing (identity function)
+        List<Long[]> elements=this.parseLine(ls);
+        long res=0;
+        long maxval=0;
+        for (Long[] el : elements){
+            long a=el[0];long b=el[1];
+            long tempres=this.sumRange(a, b);
+            tempres+=this.sumRange(a, b, 3);
+            tempres+=this.sumRange(a, b, 5);
+            tempres+=this.sumRange(a, b, 7);
+            tempres+=this.sumRange(a, b, 11);
+            maxval=Math.max(maxval, b);
+            // System.out.printf("%s\t\t%s|%s\n",a,b,tempres);
+            res+=tempres;
+        }
+        return "Running step one, max="+maxval+", result = "+res;// Default preprocessing (identity function)
     }
 }
